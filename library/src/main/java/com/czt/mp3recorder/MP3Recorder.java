@@ -1,10 +1,15 @@
 package com.czt.mp3recorder;
 
+import android.annotation.SuppressLint;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.os.Handler;
+import android.os.Message;
 
 import com.czt.mp3recorder.util.LameUtil;
+import com.hujiang.common.concurrent.TaskScheduler;
+import com.hujiang.common.concurrent.ThreadPool;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,6 +51,40 @@ public class MP3Recorder {
 	private DataEncodeThread mEncodeThread;
 	private boolean mIsRecording = false;
 	private File mRecordFile;
+
+	private OnMP3RecorderListener mListener;
+	private final int MSG_VOLUME = 0;
+	private final int MSG_STOP = 1;
+	@SuppressLint("HandlerLeak")
+	private Handler mHandler = new Handler() {
+
+		@Override
+		public void handleMessage(Message msg) {
+			switch (msg.what){
+				case MSG_VOLUME:
+					processVolume();
+					break;
+
+				case MSG_STOP:
+					callbackStop();
+					break;
+			}
+
+		}
+	};
+
+	private void processVolume() {
+		if (mListener != null){
+			mListener.onVolumeRecord(mVolume);
+		}
+	}
+
+	private void callbackStop() {
+		if (mListener != null){
+			mListener.onStopRecord(mRecordFile);
+		}
+	}
+
 	/**
 	 * Default constructor. Setup recorder with default sampling rate 1 channel,
 	 * 16 bits pcm
@@ -62,13 +101,19 @@ public class MP3Recorder {
 	 * @throws IOException  initAudioRecorder throws
 	 */
 	public void start() throws IOException {
+		if (mListener != null){
+			mListener.onStartRecord();
+		}
 		if (mIsRecording) {
+			if (mListener != null){
+				mListener.onCancelRecord();
+			}
 			return;
 		}
 		mIsRecording = true; // 提早，防止init或startRecording被多次调用
 	    initAudioRecorder();
 		mAudioRecord.startRecording();
-		new Thread() {
+		TaskScheduler.execute(new Runnable() {
 			@Override
 			public void run() {
 				//设置线程权限
@@ -78,6 +123,7 @@ public class MP3Recorder {
 					if (readSize > 0) {
 						mEncodeThread.addTask(mPCMBuffer, readSize);
 						calculateRealVolume(mPCMBuffer, readSize);
+						mHandler.sendEmptyMessage(MSG_VOLUME);
 					}
 				}
 				// release and finalize audioRecord
@@ -87,27 +133,33 @@ public class MP3Recorder {
 				// stop the encoding thread and try to wait
 				// until the thread finishes its job
 				mEncodeThread.sendStopMessage();
+				mHandler.sendEmptyMessage(MSG_STOP);
 			}
+
 			/**
 			 * 此计算方法来自samsung开发范例
-			 * 
+			 *
 			 * @param buffer buffer
 			 * @param readSize readSize
 			 */
 			private void calculateRealVolume(short[] buffer, int readSize) {
 				double sum = 0;
-				for (int i = 0; i < readSize; i++) {  
-				    // 这里没有做运算的优化，为了更加清晰的展示代码  
-				    sum += buffer[i] * buffer[i]; 
-				} 
+				for (int i = 0; i < readSize; i++) {
+					// 这里没有做运算的优化，为了更加清晰的展示代码
+					sum += buffer[i] * buffer[i];
+				}
 				if (readSize > 0) {
 					double amplitude = sum / readSize;
 					mVolume = (int) Math.sqrt(amplitude);
 				}
 			}
-		}.start();
+		});
 	}
 	private int mVolume;
+
+	public void setListener(OnMP3RecorderListener listener){
+		mListener = listener;
+	}
 
 	/**
 	 * 获取真实的音量。 [算法来自三星]
