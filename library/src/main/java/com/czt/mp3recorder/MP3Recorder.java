@@ -105,9 +105,6 @@ public class MP3Recorder {
 			mListener.onStartRecord();
 		}
 		if (mIsRecording) {
-			if (mListener != null){
-				mListener.onCancelRecord();
-			}
 			return;
 		}
 		mIsRecording = true; // 提早，防止init或startRecording被多次调用

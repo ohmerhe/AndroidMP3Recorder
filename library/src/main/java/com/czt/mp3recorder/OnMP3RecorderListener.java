@@ -11,8 +11,6 @@ public interface OnMP3RecorderListener {
 
     void onStartRecord();
 
-    void onCancelRecord();
-
     void onStopRecord(File audioFile);
 
     void onErrorRecord(String msg);
