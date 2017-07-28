@@ -17,10 +17,11 @@ import android.widget.Toast;
 
 import com.czt.mp3recorder.MP3Recorder;
 import com.czt.mp3recorder.OnMP3RecorderListener;
+import com.hujiang.common.storage.HJStorageHelper;
 
 public class MainActivity extends Activity implements OnMP3RecorderListener {
 	private static final String TAG = "MainActivity";
-	private File mRecordFile = new File(Environment.getExternalStorageDirectory(),"test.mp3");
+	private File mRecordFile = new File(HJStorageHelper.getExternalCachePath(this),"test.mp3");
 	private MediaPlayer mMediaPlayer;
 	private MP3Recorder mRecorder = new MP3Recorder(mRecordFile);
 

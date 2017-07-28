@@ -32,7 +32,7 @@ dependencies {
 libInfo {
     lib_group  "com.czt.mp3recorder"
     lib_artifact  "library"
-    lib_version = "1.0.5"
+    lib_version = "1.0.6"
     lib_pom_description "语音录音"
     lib_is_release  false
     lib_is_release_to_local  false
