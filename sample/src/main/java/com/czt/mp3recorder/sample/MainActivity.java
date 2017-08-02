@@ -89,11 +89,6 @@ public class MainActivity extends Activity implements OnMP3RecorderListener {
 	}
 
 	@Override
-	public void onCancelRecord() {
-		Log.d(TAG, "onCancelRecord");
-	}
-
-	@Override
 	public void onStopRecord(File audioFile) {
 		Log.d(TAG, "onStopRecord");
 	}
